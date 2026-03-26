@@ -1,3 +1,10 @@
+from datetime import datetime, timedelta
+
+from app.db import SessionLocal
+from app.models import ResponseAction
+from app.worker import expire_actions
+
+
 def test_action_lifecycle(client):
     heartbeat = {
         "host_id": "lin-ubuntu-01",
@@ -33,3 +40,28 @@ def test_action_lifecycle(client):
     )
     assert result.status_code == 200
     assert result.json()["state"] == "completed"
+
+
+def test_worker_expires_pending_actions_with_sqlite_naive_timestamps(client):
+    created = client.post(
+        "/api/v1/actions",
+        json={
+            "host_id": "lin-ubuntu-01",
+            "type": "isolate_host",
+            "parameters": {"reason": "ttl test"},
+            "approval_mode": "manual",
+            "ttl": 1,
+            "requested_by": "pytest",
+        },
+    ).json()
+
+    with SessionLocal() as db:
+        action = db.get(ResponseAction, created["action_id"])
+        action.created_at = datetime.utcnow() - timedelta(seconds=5)
+        db.commit()
+
+    assert expire_actions() >= 1
+
+    actions = client.get("/api/v1/actions").json()
+    action = next(item for item in actions if item["id"] == created["action_id"])
+    assert action["state"] == "expired"

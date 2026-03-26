@@ -1,19 +1,55 @@
+# Python environments
 .venv/
+venv/
+venv_test/
+myenv/
+env/
+ENV/
+
+# Python caches and test artifacts
 __pycache__/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+.nox/
 .coverage
+.coverage.*
 htmlcov/
-node_modules/
-dist/
-build/
 *.pyc
 *.pyo
 *.pyd
+
+# Local databases and runtime state
 *.sqlite3
 *.db
-.DS_Store
+*.pid
+*.out
+*.err
+
+# Node / frontend
+node_modules/
+dist/
+build/
 coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+
+# Go / compiled binaries
+bin/
+*.exe
+*.test
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

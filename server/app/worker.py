@@ -17,7 +17,10 @@ def expire_actions() -> int:
         ).all()
         now = datetime.now(timezone.utc)
         for row in rows:
-            if row.created_at + timedelta(seconds=row.ttl_seconds) < now:
+            created_at = row.created_at
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            if created_at + timedelta(seconds=row.ttl_seconds) < now:
                 row.state = "expired"
                 changed += 1
         db.commit()
