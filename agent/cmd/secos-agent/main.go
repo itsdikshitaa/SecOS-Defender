@@ -7,11 +7,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/therayyanawaz/secos-defender/agent/internal/buffer"
-	"github.com/therayyanawaz/secos-defender/agent/internal/client"
-	"github.com/therayyanawaz/secos-defender/agent/internal/collectors"
-	"github.com/therayyanawaz/secos-defender/agent/internal/config"
-	"github.com/therayyanawaz/secos-defender/agent/internal/runner"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/buffer"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/client"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/collectors"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/config"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/runner"
 )
 
 func main() {

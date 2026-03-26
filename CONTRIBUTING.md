@@ -53,7 +53,7 @@ Before submitting changes, test your code thoroughly:
 ---
 
 ## Communication
-For questions or discussions, feel free to reach out by opening an issue or emailing the project maintainer at `therayyanawaz@gmail.com`.
+For questions or discussions, feel free to reach out by opening an issue or emailing the project maintainer at `itsdikshitaa@gmail.com`.
 
 ---
 

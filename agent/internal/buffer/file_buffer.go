@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/therayyanawaz/secos-defender/agent/internal/api"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/api"
 )
 
 type FileBuffer struct {

@@ -1,3 +1,3 @@
-module github.com/therayyanawaz/secos-defender/agent
+module github.com/itsdikshitaa/secos-defender/agent
 
 go 1.23.0

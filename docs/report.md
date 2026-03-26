@@ -131,7 +131,7 @@ Displays alerts and system status via a Flask-based dashboard:
 ## 6. Revision Tracking on GitHub
 
 Repository Name: `SecOS Defender`  
-GitHub Link: [https://github.com/therayyanawaz/SecOS-Defender](https://github.com/therayyanawaz/SecOS-Defender)
+GitHub Link: [https://github.com/itsdikshitaa/SecOS-Defender](https://github.com/itsdikshitaa/SecOS-Defender)
 
 ---
 

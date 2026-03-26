@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/therayyanawaz/secos-defender/agent/internal/api"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/api"
 )
 
 type FixtureCollector struct {

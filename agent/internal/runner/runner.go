@@ -6,11 +6,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/therayyanawaz/secos-defender/agent/internal/api"
-	"github.com/therayyanawaz/secos-defender/agent/internal/buffer"
-	"github.com/therayyanawaz/secos-defender/agent/internal/client"
-	"github.com/therayyanawaz/secos-defender/agent/internal/collectors"
-	"github.com/therayyanawaz/secos-defender/agent/internal/config"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/api"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/buffer"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/client"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/collectors"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/config"
 )
 
 type Runner struct {

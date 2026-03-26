@@ -53,3 +53,5 @@ bin/
 Thumbs.db
 .idea/
 .vscode/
+.github/
+.git/

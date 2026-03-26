@@ -1,7 +1,7 @@
 # Security Policy
 
 ## Reporting Vulnerabilities
-Please report security issues to security@therayyanawaz.co.in.  
+Please report security issues to security@itsdikshitaa.co.in.  
 **Do not disclose publicly** until we release a patch.
 
 ## Supported Versions

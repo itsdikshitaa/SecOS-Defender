@@ -12,8 +12,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/therayyanawaz/secos-defender/agent/internal/api"
-	"github.com/therayyanawaz/secos-defender/agent/internal/config"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/api"
+	"github.com/itsdikshitaa/secos-defender/agent/internal/config"
 )
 
 type Client struct {
