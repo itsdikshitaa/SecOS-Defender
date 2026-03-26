@@ -120,23 +120,30 @@ Create a virtual environment and install backend dependencies:
 python -m venv .venv
 ```
 
-**PowerShell**
+Activate the environment:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-pip install -r server/requirements.txt
-$env:PYTHONPATH = "server"
-uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-**macOS / Linux**
+or:
 
 ```bash
 source .venv/bin/activate
-pip install -r server/requirements.txt
-export PYTHONPATH=server
-uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
+
+Install dependencies and start the API with a shell-agnostic command:
+
+```bash
+pip install -r server/requirements.txt
+python -m uvicorn --app-dir server app.main:app --host 0.0.0.0 --port 8000
+```
+
+If you explicitly want to use `PYTHONPATH` instead:
+
+- **PowerShell**: `$env:PYTHONPATH = "server"`
+- **cmd.exe**: `set PYTHONPATH=server`
+- **macOS / Linux**: `export PYTHONPATH=server`
 
 #### 2. Console
 
