@@ -1,0 +1,22 @@
+{
+  "host_id": "lin-ubuntu-01",
+  "hostname": "lin-ubuntu-01",
+  "platform": "linux",
+  "attributes": {
+    "collector": "demo-producer"
+  },
+  "packages": [
+    {
+      "name": "openssl",
+      "version": "3.0.10",
+      "architecture": "amd64",
+      "source": "dpkg"
+    },
+    {
+      "name": "curl",
+      "version": "8.6.0",
+      "architecture": "amd64",
+      "source": "dpkg"
+    }
+  ]
+}

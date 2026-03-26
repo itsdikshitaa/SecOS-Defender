@@ -1,49 +1,63 @@
+import json
 import os
-import time
-
-def simulate_buffer_overflow():
-    """
-    Simulates a buffer overflow by running the vulnerable C program.
-    """
-    print("[INFO] Simulating Buffer Overflow...")
-    os.system("gcc -fsanitize=address -o buffer_overflow src/detection/buffer_overflow.c")
-    os.system("./buffer_overflow AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # Input exceeding buffer size
-    print("[INFO] Buffer Overflow simulation complete.\n")
+from pathlib import Path
+from urllib import request
 
 
-def simulate_trapdoor():
-    """
-    Simulates a trapdoor by adding suspicious commands to system logs.
-    """
-    print("[INFO] Simulating Trapdoor...")
-    with open("system_logs.txt", "a") as log_file:
-        log_file.write("user1 ran sudo chmod 777 /etc/passwd\n")
-        log_file.write("user2 executed su root\n")
-    print("[INFO] Trapdoor simulation complete. Logs updated.\n")
+ROOT = Path(__file__).resolve().parents[2]
+FIXTURES = ROOT / "fixtures" / "demo"
+API_BASE_URL = os.getenv("SECOS_API_BASE_URL", "http://localhost:8000/api/v1")
 
 
-def simulate_cache_poisoning():
-    """
-    Simulates ARP cache poisoning by adding suspicious entries to ARP traffic logs.
-    """
-    print("[INFO] Simulating Cache Poisoning...")
-    with open("arp_traffic_logs.txt", "a") as log_file:
-        log_file.write("unsolicited ARP reply from 192.168.1.5\n")
-        log_file.write("duplicate IP detected for 192.168.1.10\n")
-    print("[INFO] Cache Poisoning simulation complete. Logs updated.\n")
+def post_json(path: str, payload: dict) -> None:
+    body = json.dumps(payload).encode("utf-8")
+    req = request.Request(
+        f"{API_BASE_URL}{path}",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with request.urlopen(req) as response:
+        print(f"[INFO] POST {path} -> {response.status}")
+
+
+def load_json(filename: str):
+    with (FIXTURES / filename).open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def send_heartbeat(host_id: str, hostname: str, platform: str) -> None:
+    post_json(
+        "/agents/heartbeat",
+        {
+            "host_id": host_id,
+            "hostname": hostname,
+            "platform": platform,
+            "agent_version": "demo-producer",
+            "queue_depth": 0,
+            "status": "online",
+            "metadata": {"producer": "attack_simulator"},
+        },
+    )
+
+
+def simulate_inventory() -> None:
+    for filename in ["linux-inventory.json", "windows-inventory.json"]:
+        report = load_json(filename)
+        send_heartbeat(report["host_id"], report["hostname"], report["platform"])
+        post_json("/ingest/inventory", report)
+
+
+def simulate_events() -> None:
+    windows_events = load_json("windows-events.json")
+    linux_events = load_json("linux-events.json")
+    post_json("/ingest/events", {"batch_id": "demo-windows", "events": windows_events})
+    post_json("/ingest/events", {"batch_id": "demo-linux", "events": linux_events})
 
 
 if __name__ == "__main__":
-    print("Starting Attack Simulation Engine...\n")
-    
-    # Simulate each attack type with delays
-    simulate_buffer_overflow()
-    time.sleep(2)
-    
-    simulate_trapdoor()
-    time.sleep(2)
-    
-    simulate_cache_poisoning()
-    time.sleep(2)
-    
-    print("All attack simulations completed.")
+    print("[INFO] Sending SecOS Defender v2 demo inventory...")
+    simulate_inventory()
+    print("[INFO] Sending SecOS Defender v2 demo events...")
+    simulate_events()
+    print("[INFO] Demo producer completed. Open the analyst console to inspect findings.")

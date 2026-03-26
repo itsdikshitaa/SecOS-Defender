@@ -1,104 +1,86 @@
-# SecOS Defender: Security Vulnerability Detection Framework
+# SecOS Defender v2
 
-## Project Overview
+SecOS Defender v2 is a self-hosted endpoint defense platform for Linux and Windows. This repository now includes:
 
-SecOS Defender is a comprehensive framework designed to detect and mitigate security vulnerabilities in operating systems. The framework focuses on identifying common vulnerabilities such as buffer overflows, trapdoors, and cache poisoning while providing real-time alerts and actionable remediation strategies.
+- A FastAPI backend with normalized event ingestion, rule-driven detections, vulnerability correlation, response orchestration, and WebSocket updates
+- A React/TypeScript analyst console for alerts, findings, host inventory, exposure tracking, and action approval
+- A Go agent scaffold with persistent buffering, fixture-based collectors, heartbeats, ingest, and action result reporting
+- Docker Compose for local bring-up with PostgreSQL
+- Demo fixtures and a Python producer that sends realistic sample telemetry into the new API
 
-This project implements a modular security framework that:
-- Simulates attacks to test system defenses
-- Detects vulnerabilities using multiple detection mechanisms
-- Provides real-time alerts through a user-friendly dashboard
-- Suggests mitigation strategies for identified vulnerabilities
+## Architecture
 
-## Features
+- `server/`: FastAPI API, SQLAlchemy models, rule engine, worker, vulnerability feed
+- `console/`: React/Vite analyst console
+- `agent/`: Go agent skeleton with TLS-ready client and local queue
+- `rules/default/`: Sigma-compatible YAML detection packs
+- `fixtures/demo/`: Demo events and inventory
+- `src/simulation/attack_simulator.py`: Demo producer for the v2 ingest API
 
-- **Buffer Overflow Detection**: Identifies stack and heap-based buffer overflows using Address Sanitizer (ASAN) and canary-based detection
-- **Trapdoor Identification**: Monitors system for unauthorized access points and backdoors
-- **Cache Poisoning Detection**: Identifies ARP cache poisoning attempts and other cache-based attacks
-- **Real-time Alerting**: Logs and displays security alerts through a web-based dashboard
-- **Mitigation Advisor**: Provides actionable recommendations for addressing detected vulnerabilities
+## Quick Start
 
-## System Requirements
+### Option 1: Docker Compose
 
-- Ubuntu 20.04 LTS or newer
-- Python 3.8+
-- GCC with Address Sanitizer support
-- 4GB RAM minimum (8GB recommended)
-- 20GB free disk space
+```bash
+docker compose up --build
+```
 
-## Installation
+Then open:
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/therayyanawaz/SecOS-Defender.git
-   cd SecOS-Defender
-   ```
+- API: [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
+- Console: [http://localhost:5173](http://localhost:5173)
 
-2. Install dependencies:
-   ```bash
-   # Install system dependencies
-   sudo apt-get update
-   sudo apt-get install -y build-essential python3-dev python3-pip
+### Option 2: Local development
 
-   # Install Python dependencies
-   pip install -r requirements.txt
-   ```
+Backend:
 
-3. Compile the detection modules:
-   ```bash
-   cd src/detection
-   gcc -fsanitize=address -o buffer_detector buffer_overflow.c
-   ```
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r server/requirements.txt
+set PYTHONPATH=server
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
 
-## Usage
+Console:
 
-1. Start the detection service:
-   ```bash
-   python src/detection/detection_service.py
-   ```
+```bash
+cd console
+npm install
+npm run dev -- --host 0.0.0.0
+```
 
-2. Launch the attack simulator (in a separate terminal):
-   ```bash
-   python src/simulation/attack_simulator.py
-   ```
+## Seed Demo Data
 
-3. Start the web dashboard:
-   ```bash
-   python src/ui/app.py
-   ```
+With the API running:
 
-4. Access the dashboard at `http://localhost:5000`
+```bash
+python src/simulation/attack_simulator.py
+```
 
-## Module Structure
+This sends:
 
-The framework consists of five primary modules:
+- Linux runtime events that trigger `curl | bash` and dangerous `chmod` detections
+- Windows Sysmon-like PowerShell events
+- Package inventory that creates vulnerability findings from the seeded feed
 
-1. **Attack Simulation Engine**: Generates controlled attacks to test system defenses
-2. **Vulnerability Detection Core**: Monitors system for security vulnerabilities
-3. **Alert System**: Processes and displays security alerts
-4. **Mitigation Advisor**: Suggests remediation strategies for detected vulnerabilities
-5. **User Interface**: Provides a web-based dashboard for monitoring and management
+## Agent
 
-## Contributing
+The Go agent is scaffolded for fixture-backed collection and action polling:
 
-Contributions to SecOS Defender are welcome! Please follow these steps:
+```bash
+go run ./agent/cmd/secos-agent -config agent/config.sample.json
+```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Go is not bundled in this repo. If Go is unavailable locally, build the agent with the included `agent/Dockerfile`.
 
-## License
+## Tests
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+```bash
+python -m pytest
+```
 
-## Acknowledgments
+## Notes
 
-- Address Sanitizer (ASAN) for memory error detection
-- Flask for the web dashboard framework
-- The MITRE ATT&CK framework for attack simulation guidance
-
----
-
-*This project was developed as part of a security framework implementation assignment.*
+- PostgreSQL is the intended runtime datastore; tests default to SQLite for speed.
+- The old prototype modules under `src/` remain in the repo as historical reference, but the active v2 stack is `server/`, `console/`, and `agent/`.

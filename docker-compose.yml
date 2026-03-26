@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: secos
+      POSTGRES_USER: secos
+      POSTGRES_PASSWORD: secos
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      SECOS_DATABASE_URL: postgresql+psycopg://secos:secos@db:5432/secos
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    command: ["python", "-m", "app.worker"]
+    environment:
+      SECOS_DATABASE_URL: postgresql+psycopg://secos:secos@db:5432/secos
+    depends_on:
+      - db
+
+  console:
+    build:
+      context: .
+      dockerfile: console/Dockerfile
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_WS_BASE_URL: ws://localhost:8000
+    depends_on:
+      - api
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres-data:

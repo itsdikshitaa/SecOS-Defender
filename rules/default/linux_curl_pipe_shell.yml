@@ -1,0 +1,24 @@
+id: SECOS-LNX-001
+version: 1.0.0
+title: Curl Piped To Shell
+status: stable
+description: Detects shell commands that stream remote content directly into a shell interpreter.
+logsource:
+  product: linux
+  service: journald
+detection:
+  selection:
+    event_type: process_start
+    process.command_line|regex: "curl.+\\|\\s*(sh|bash)"
+  condition: selection
+level: critical
+tags:
+  - attack.execution
+  - attack.command_and_scripting
+references:
+  - https://falco.org/docs/reference/rules/rule-fields/
+mitre_attack:
+  - T1059
+responses:
+  - Freeze outbound access for the host after analyst approval.
+  - Retrieve the fetched script content and preserve shell history.

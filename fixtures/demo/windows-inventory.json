@@ -1,0 +1,16 @@
+{
+  "host_id": "win-analyst-01",
+  "hostname": "win-analyst-01",
+  "platform": "windows",
+  "attributes": {
+    "collector": "demo-producer"
+  },
+  "packages": [
+    {
+      "name": "python",
+      "version": "3.11.8",
+      "architecture": "x64",
+      "source": "winget"
+    }
+  ]
+}

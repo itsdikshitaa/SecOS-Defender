@@ -1,0 +1,13 @@
+{
+  "api_base_url": "http://localhost:8000",
+  "host_id": "lin-ubuntu-01",
+  "hostname": "lin-ubuntu-01",
+  "platform": "linux",
+  "agent_version": "2.0.0-dev",
+  "queue_file": "agent/data/queue.json",
+  "collect_interval_seconds": 30,
+  "heartbeat_interval_seconds": 15,
+  "inventory_interval_seconds": 300,
+  "fixture_events_path": "fixtures/demo/linux-events.json",
+  "fixture_inventory_path": "fixtures/demo/linux-inventory.json"
+}

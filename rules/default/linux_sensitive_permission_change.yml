@@ -1,0 +1,24 @@
+id: SECOS-LNX-002
+version: 1.0.0
+title: Dangerous Permission Change On Critical Files
+status: stable
+description: Detects chmod operations that make sensitive Linux account files broadly writable or executable.
+logsource:
+  product: linux
+  service: journald
+detection:
+  selection:
+    event_type: process_start
+    process.command_line|regex: "chmod\\s+[0-7]{3,4}\\s+/(etc/passwd|etc/shadow)"
+  condition: selection
+level: high
+tags:
+  - attack.persistence
+  - attack.privilege_escalation
+references:
+  - https://documentation.wazuh.com/current/user-manual/capabilities/active-response/index.html
+mitre_attack:
+  - T1098
+responses:
+  - Validate file integrity and revert permissions using a known-good baseline.
+  - Rotate affected local credentials if tampering is confirmed.

@@ -1,0 +1,25 @@
+id: SECOS-WIN-001
+version: 1.0.0
+title: Encoded PowerShell Execution
+status: stable
+description: Detects PowerShell execution using encoded commands, a frequent sign of payload staging or defense evasion.
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    event_type: process_start
+    process.name|contains: powershell
+    process.command_line|contains: -EncodedCommand
+  condition: selection
+level: high
+tags:
+  - attack.execution
+  - attack.t1059.001
+references:
+  - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/sysmon
+mitre_attack:
+  - T1059.001
+responses:
+  - Isolate the endpoint from the network after analyst approval.
+  - Capture PowerShell operational logs and the parent process tree.
