@@ -408,3 +408,51 @@ async def event_stream(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         await hub.disconnect(websocket)
+
+
+@router.get("/audit-log")
+def get_audit_log_endpoint(
+    limit: int = 100,
+    offset: int = 0,
+    entity_type: str | None = None,
+    entity_id: str | None = None,
+    action: str | None = None,
+    actor: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Get audit log entries for compliance and investigation.
+    
+    Query parameters:
+    - limit: Number of results (default 100, max 500)
+    - offset: Pagination offset (default 0)
+    - entity_type: Filter by entity type (response_action, user, rule, etc.)
+    - entity_id: Filter by specific entity ID
+    - action: Filter by action (created, approved, resolved, login, etc.)
+    - actor: Filter by user/service that performed the action
+    """
+    from app.services.audit import get_audit_log
+    
+    limit = min(limit, 500)
+    entries = get_audit_log(
+        db,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        action=action,
+        actor=actor,
+        limit=limit,
+        offset=offset,
+    )
+    
+    return [
+        {
+            "id": entry.id,
+            "entity_type": entry.entity_type,
+            "entity_id": entry.entity_id,
+            "action": entry.action,
+            "actor": entry.actor,
+            "occurred_at": entry.occurred_at.isoformat(),
+            "details": entry.details,
+        }
+        for entry in entries
+    ]

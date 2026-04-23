@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Alert, Event, Finding, Host
+from app.models import Alert, Event, Finding, Host, AuditLog
 from app.schemas import EventBatch, NormalizedEvent
 from app.services.broadcaster import hub
 from app.services.rules import RuleEngine, RuleMatch
@@ -107,6 +107,22 @@ async def ingest_events(db: Session, payload: EventBatch, rule_engine: RuleEngin
                     severity=match.severity,
                     evidence=match.evidence,
                     recommended_actions=match.recommended_actions,
+                )
+            )
+            db.flush()
+            
+            db.add(
+                AuditLog(
+                    entity_type="alert",
+                    entity_id=db.scalars(select(Alert).order_by(Alert.created_at.desc())).first().id,
+                    action="created",
+                    actor="rule_engine",
+                    details={
+                        "rule_id": match.rule_id,
+                        "host_id": event.host_id,
+                        "event_id": event.event_id,
+                        "severity": match.severity,
+                    },
                 )
             )
             alerts_created += 1
