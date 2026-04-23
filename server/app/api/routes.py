@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket
 from fastapi.responses import StreamingResponse
 
 from app.db import get_db
-from app.models import AgentHealth, Host, ResponseAction, RulePack, SoftwareInventory, Vulnerability, Alert, Finding
+from app.models import AgentHealth, Host, ResponseAction, RulePack, SoftwareInventory, Vulnerability, Alert, Finding, AlertSuppression
 from app.schemas import ActionApproval, ActionResult, DashboardSnapshot, EventBatch, Heartbeat, InventoryReport, ResponseActionCreate
 from app.services.actions import approve_action, create_action, mark_action_result, poll_actions
 from app.services.broadcaster import hub
@@ -625,3 +625,123 @@ def export_incident_report_endpoint(
         media_type="application/json",
         headers={"Content-Disposition": "attachment; filename=incident_report.json"},
     )
+
+
+@router.post("/suppressions")
+def create_suppression_endpoint(
+    rule_id: str,
+    reason: str,
+    host_id: str | None = None,
+    expires_in_days: int | None = None,
+    request: Request = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Create an alert suppression rule.
+    Suppresses alerts from a specific rule (optionally scoped to a host).
+    
+    Query parameters:
+    - rule_id: Rule to suppress
+    - reason: Why suppressing (e.g., "Known cron job", "Test environment")
+    - host_id: Optional - suppress only for this host
+    - expires_in_days: Optional - auto-expire after N days
+    """
+    from app.services.dedup import create_suppression
+    
+    token = request.scope.get("token") if request else None
+    actor = "analyst"
+    if token:
+        from app.services.auth import decode_token
+        decoded = decode_token(token)
+        if decoded:
+            actor = decoded.get("username", "analyst")
+    
+    suppression = create_suppression(
+        db,
+        rule_id=rule_id,
+        reason=reason,
+        created_by=actor,
+        host_id=host_id,
+        expires_in_days=expires_in_days,
+    )
+    
+    return {
+        "id": suppression.id,
+        "rule_id": suppression.rule_id,
+        "host_id": suppression.host_id,
+        "reason": suppression.reason,
+        "is_active": suppression.is_active,
+        "expires_at": suppression.expires_at.isoformat() if suppression.expires_at else None,
+        "created_by": suppression.created_by,
+    }
+
+
+@router.get("/suppressions")
+def get_suppressions_endpoint(
+    rule_id: str | None = None,
+    host_id: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Get active alert suppression rules."""
+    from app.services.dedup import get_active_suppressions
+    
+    suppressions = get_active_suppressions(db, rule_id=rule_id, host_id=host_id)
+    
+    return [
+        {
+            "id": s.id,
+            "rule_id": s.rule_id,
+            "host_id": s.host_id,
+            "reason": s.reason,
+            "is_active": s.is_active,
+            "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+            "created_by": s.created_by,
+            "created_at": s.created_at.isoformat(),
+        }
+        for s in suppressions
+    ]
+
+
+@router.delete("/suppressions/{suppression_id}")
+def delete_suppression_endpoint(
+    suppression_id: str,
+    db: Session = Depends(get_db),
+):
+    """Disable (delete) a suppression rule."""
+    from app.services.dedup import disable_suppression
+    
+    suppression = disable_suppression(db, suppression_id)
+    if not suppression:
+        raise HTTPException(status_code=404, detail="Suppression not found")
+    
+    return {"message": "Suppression disabled", "id": suppression_id}
+
+
+@router.post("/alerts/{alert_id}/mark-false-positive")
+def mark_false_positive_endpoint(
+    alert_id: str,
+    reason: str = "",
+    request: Request = None,
+    db: Session = Depends(get_db),
+):
+    """Mark an alert as false positive."""
+    from app.services.dedup import mark_alert_as_false_positive
+    
+    token = request.scope.get("token") if request else None
+    actor = "analyst"
+    if token:
+        from app.services.auth import decode_token
+        decoded = decode_token(token)
+        if decoded:
+            actor = decoded.get("username", "analyst")
+    
+    alert = mark_alert_as_false_positive(db, alert_id, actor, reason)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    return {
+        "id": alert.id,
+        "status": alert.status,
+        "marked_by": actor,
+    }
+

@@ -185,3 +185,17 @@ class AuditLog(Base):
     actor: Mapped[str] = mapped_column(String(128))
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     details: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class AlertSuppression(TimestampMixin, Base):
+    __tablename__ = "alert_suppression"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
+    rule_id: Mapped[str] = mapped_column(String(128), index=True)
+    host_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    reason: Mapped[str] = mapped_column(String(255))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[str] = mapped_column(String(128))
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
