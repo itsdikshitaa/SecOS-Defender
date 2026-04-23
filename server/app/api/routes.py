@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 
 from app.db import get_db
-from app.models import AgentHealth, Host, ResponseAction, RulePack, SoftwareInventory, Vulnerability
+from app.models import AgentHealth, Host, ResponseAction, RulePack, SoftwareInventory, Vulnerability, Alert, Finding
 from app.schemas import ActionApproval, ActionResult, DashboardSnapshot, EventBatch, Heartbeat, InventoryReport, ResponseActionCreate
 from app.services.actions import approve_action, create_action, mark_action_result, poll_actions
 from app.services.broadcaster import hub
@@ -208,18 +208,164 @@ def hosts(db: Session = Depends(get_db)):
 
 
 @router.get("/alerts")
-def alerts(limit: int = 30, db: Session = Depends(get_db)):
-    return get_recent_alerts(db, limit=limit)
+def alerts(
+    limit: int = 50,
+    offset: int = 0,
+    host_id: str | None = None,
+    severity: str | None = None,
+    rule_id: str | None = None,
+    status: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get alerts with advanced filtering.
+    
+    Query parameters:
+    - limit: Number of results (default 50, max 500)
+    - offset: Pagination offset (default 0)
+    - host_id: Filter by host ID
+    - severity: Filter by severity (critical, high, medium, low)
+    - rule_id: Filter by rule ID
+    - status: Filter by alert status (open, acknowledged, resolved)
+    - search: Full-text search in title/summary
+    """
+    limit = min(limit, 500)
+    
+    query = select(Alert)
+    
+    if host_id:
+        query = query.where(Alert.host_id == host_id)
+    if severity:
+        query = query.where(Alert.severity == severity)
+    if rule_id:
+        query = query.where(Alert.rule_id == rule_id)
+    if status:
+        query = query.where(Alert.status == status)
+    if search:
+        query = query.where(
+            (Alert.title.ilike(f"%{search}%")) | (Alert.summary.ilike(f"%{search}%"))
+        )
+    
+    query = query.order_by(Alert.created_at.desc()).offset(offset).limit(limit)
+    rows = db.scalars(query).all()
+    
+    return [
+        {
+            "id": row.id,
+            "host_id": row.host_id,
+            "event_id": row.event_id,
+            "rule_id": row.rule_id,
+            "title": row.title,
+            "summary": row.summary,
+            "severity": row.severity,
+            "status": row.status,
+            "created_at": row.created_at.isoformat(),
+        }
+        for row in rows
+    ]
 
 
 @router.get("/findings")
-def findings(limit: int = 30, db: Session = Depends(get_db)):
-    return get_recent_findings(db, limit=limit)
+def findings(
+    limit: int = 50,
+    offset: int = 0,
+    host_id: str | None = None,
+    severity: str | None = None,
+    status: str | None = None,
+    category: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get findings with advanced filtering.
+    
+    Query parameters:
+    - limit: Number of results (default 50, max 500)
+    - offset: Pagination offset (default 0)
+    - host_id: Filter by host ID
+    - severity: Filter by severity (critical, high, medium, low)
+    - status: Filter by status (open, acknowledged, resolved)
+    - category: Filter by finding category
+    - search: Full-text search in title/description
+    """
+    limit = min(limit, 500)
+    
+    query = select(Finding)
+    
+    if host_id:
+        query = query.where(Finding.host_id == host_id)
+    if severity:
+        query = query.where(Finding.severity == severity)
+    if status:
+        query = query.where(Finding.status == status)
+    if category:
+        query = query.where(Finding.category == category)
+    if search:
+        query = query.where(
+            (Finding.title.ilike(f"%{search}%")) | (Finding.description.ilike(f"%{search}%"))
+        )
+    
+    query = query.order_by(Finding.created_at.desc()).offset(offset).limit(limit)
+    rows = db.scalars(query).all()
+    
+    return [
+        {
+            "id": row.id,
+            "host_id": row.host_id,
+            "category": row.category,
+            "title": row.title,
+            "description": row.description,
+            "severity": row.severity,
+            "status": row.status,
+            "first_seen": row.first_seen.isoformat(),
+            "last_seen": row.last_seen.isoformat(),
+        }
+        for row in rows
+    ]
 
 
 @router.get("/vulnerabilities")
-def vulnerabilities(limit: int = 30, db: Session = Depends(get_db)):
-    rows = db.scalars(select(Vulnerability).order_by(Vulnerability.updated_at.desc()).limit(limit)).all()
+def vulnerabilities(
+    limit: int = 50,
+    offset: int = 0,
+    host_id: str | None = None,
+    severity: str | None = None,
+    status: str | None = None,
+    cve_id: str | None = None,
+    package_name: str | None = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get vulnerabilities with advanced filtering.
+    
+    Query parameters:
+    - limit: Number of results (default 50, max 500)
+    - offset: Pagination offset (default 0)
+    - host_id: Filter by host ID
+    - severity: Filter by severity (critical, high, medium, low)
+    - status: Filter by status (open, resolved)
+    - cve_id: Filter by CVE ID
+    - package_name: Filter by package name
+    """
+    limit = min(limit, 500)
+    
+    query = select(Vulnerability)
+    
+    if host_id:
+        query = query.where(Vulnerability.host_id == host_id)
+    if severity:
+        query = query.where(Vulnerability.severity == severity)
+    if status:
+        query = query.where(Vulnerability.status == status)
+    if cve_id:
+        query = query.where(Vulnerability.cve_id.ilike(f"%{cve_id}%"))
+    if package_name:
+        query = query.where(Vulnerability.package_name.ilike(f"%{package_name}%"))
+    
+    query = query.order_by(Vulnerability.updated_at.desc()).offset(offset).limit(limit)
+    rows = db.scalars(query).all()
+    
     return [
         {
             "id": row.id,
