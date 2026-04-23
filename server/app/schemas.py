@@ -123,3 +123,44 @@ class DashboardSnapshot(BaseModel):
     findings: list[dict[str, Any]]
     vulnerabilities: list[dict[str, Any]]
     hosts: list[dict[str, Any]]
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict[str, Any]
+
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+    full_name: str | None = None
+    role: str = "analyst"
+
+
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    email: str
+    full_name: str | None
+    role: str
+    is_active: bool
+    last_login: datetime | None
+    created_at: datetime
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    entity_type: str
+    entity_id: str
+    action: str
+    actor: str
+    occurred_at: datetime
+    details: dict[str, Any]
+

@@ -30,6 +30,15 @@ class Settings(BaseSettings):
     vulnerability_feed_path: Path = SERVICE_DIR / "app" / "data" / "vulnerability_feed.json"
     websocket_backlog: int = 50
     response_requires_approval: bool = True
+    secret_key: str = Field(
+        default="your-secret-key-change-in-production-12345678",
+        description="Secret key for JWT token signing. Change in production!",
+    )
+    access_token_expire_hours: int = 24
+
+    @property
+    def SECRET_KEY(self) -> str:
+        return self.secret_key
 
 
 @lru_cache(maxsize=1)

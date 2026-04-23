@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router
+from app.api.auth import router as auth_router
 from app.config import get_settings
 from app.db import SessionLocal
 from app.services.bootstrap import bootstrap
@@ -33,4 +34,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def extract_token(request: Request, call_next):
+    """Extract JWT token from Authorization header and add to request scope."""
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+    request.scope["token"] = token
+    response = await call_next(request)
+    return response
+
+
+app.include_router(auth_router, prefix=settings.api_v1_prefix)
 app.include_router(router, prefix=settings.api_v1_prefix)
