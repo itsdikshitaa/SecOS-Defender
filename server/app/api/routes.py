@@ -3,7 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect, Response
+from fastapi.responses import StreamingResponse
 
 from app.db import get_db
 from app.models import AgentHealth, Host, ResponseAction, RulePack, SoftwareInventory, Vulnerability, Alert, Finding
@@ -11,6 +12,15 @@ from app.schemas import ActionApproval, ActionResult, DashboardSnapshot, EventBa
 from app.services.actions import approve_action, create_action, mark_action_result, poll_actions
 from app.services.broadcaster import hub
 from app.services.pipeline import ensure_host, get_overview_metrics, get_recent_alerts, get_recent_findings, ingest_events
+from app.services.export import (
+    export_alerts_csv,
+    export_alerts_json,
+    export_findings_csv,
+    export_findings_json,
+    export_vulnerabilities_csv,
+    export_vulnerabilities_json,
+    create_incident_report,
+)
 
 
 router = APIRouter()
@@ -456,3 +466,162 @@ def get_audit_log_endpoint(
         }
         for entry in entries
     ]
+
+
+@router.get("/export/alerts/csv")
+def export_alerts_csv_endpoint(
+    host_id: str | None = None,
+    severity: str | None = None,
+    rule_id: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Export alerts as CSV file."""
+    filters = {
+        "host_id": host_id,
+        "severity": severity,
+        "rule_id": rule_id,
+        "status": status,
+    }
+    csv_content = export_alerts_csv(db, {k: v for k, v in filters.items() if v})
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=alerts.csv"},
+    )
+
+
+@router.get("/export/alerts/json")
+def export_alerts_json_endpoint(
+    host_id: str | None = None,
+    severity: str | None = None,
+    rule_id: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Export alerts as JSON file."""
+    filters = {
+        "host_id": host_id,
+        "severity": severity,
+        "rule_id": rule_id,
+        "status": status,
+    }
+    json_content = export_alerts_json(db, {k: v for k, v in filters.items() if v})
+    
+    return Response(
+        content=json_content,
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=alerts.json"},
+    )
+
+
+@router.get("/export/findings/csv")
+def export_findings_csv_endpoint(
+    host_id: str | None = None,
+    severity: str | None = None,
+    status: str | None = None,
+    category: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Export findings as CSV file."""
+    filters = {
+        "host_id": host_id,
+        "severity": severity,
+        "status": status,
+        "category": category,
+    }
+    csv_content = export_findings_csv(db, {k: v for k, v in filters.items() if v})
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=findings.csv"},
+    )
+
+
+@router.get("/export/findings/json")
+def export_findings_json_endpoint(
+    host_id: str | None = None,
+    severity: str | None = None,
+    status: str | None = None,
+    category: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Export findings as JSON file."""
+    filters = {
+        "host_id": host_id,
+        "severity": severity,
+        "status": status,
+        "category": category,
+    }
+    json_content = export_findings_json(db, {k: v for k, v in filters.items() if v})
+    
+    return Response(
+        content=json_content,
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=findings.json"},
+    )
+
+
+@router.get("/export/vulnerabilities/csv")
+def export_vulnerabilities_csv_endpoint(
+    host_id: str | None = None,
+    severity: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Export vulnerabilities as CSV file."""
+    filters = {
+        "host_id": host_id,
+        "severity": severity,
+        "status": status,
+    }
+    csv_content = export_vulnerabilities_csv(db, {k: v for k, v in filters.items() if v})
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=vulnerabilities.csv"},
+    )
+
+
+@router.get("/export/vulnerabilities/json")
+def export_vulnerabilities_json_endpoint(
+    host_id: str | None = None,
+    severity: str | None = None,
+    status: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Export vulnerabilities as JSON file."""
+    filters = {
+        "host_id": host_id,
+        "severity": severity,
+        "status": status,
+    }
+    json_content = export_vulnerabilities_json(db, {k: v for k, v in filters.items() if v})
+    
+    return Response(
+        content=json_content,
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=vulnerabilities.json"},
+    )
+
+
+@router.get("/export/incident-report")
+def export_incident_report_endpoint(
+    host_id: str | None = None,
+    severity: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Generate comprehensive incident report (JSON).
+    Includes alerts, findings, vulnerabilities summary and details.
+    """
+    report_content = create_incident_report(db, host_id=host_id, severity_filter=severity)
+    
+    return Response(
+        content=report_content,
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=incident_report.json"},
+    )
