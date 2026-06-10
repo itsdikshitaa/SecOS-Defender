@@ -14,23 +14,25 @@ type TLSConfig struct {
 }
 
 type Config struct {
-	APIBaseURL              string    `json:"api_base_url"`
-	HostID                  string    `json:"host_id"`
-	Hostname                string    `json:"hostname"`
-	Platform                string    `json:"platform"`
-	AgentVersion            string    `json:"agent_version"`
-	QueueFile               string    `json:"queue_file"`
-	CollectIntervalSeconds  int       `json:"collect_interval_seconds"`
-	HeartbeatIntervalSeconds int      `json:"heartbeat_interval_seconds"`
-	InventoryIntervalSeconds int      `json:"inventory_interval_seconds"`
-	FixtureEventsPath       string    `json:"fixture_events_path"`
-	FixtureInventoryPath    string    `json:"fixture_inventory_path"`
-	TLS                     TLSConfig `json:"tls"`
+	APIBaseURL               string    `json:"api_base_url"`
+	APIKey                   string    `json:"api_key"`
+	HostID                   string    `json:"host_id"`
+	Hostname                 string    `json:"hostname"`
+	Platform                 string    `json:"platform"`
+	AgentVersion             string    `json:"agent_version"`
+	QueueFile                string    `json:"queue_file"`
+	CollectIntervalSeconds   int       `json:"collect_interval_seconds"`
+	HeartbeatIntervalSeconds int       `json:"heartbeat_interval_seconds"`
+	InventoryIntervalSeconds int       `json:"inventory_interval_seconds"`
+	FixtureEventsPath        string    `json:"fixture_events_path"`
+	FixtureInventoryPath     string    `json:"fixture_inventory_path"`
+	TLS                      TLSConfig `json:"tls"`
 }
 
 func Load(path string) (Config, error) {
 	cfg := Config{
 		APIBaseURL:               "http://localhost:8000",
+		APIKey:                   os.Getenv("SECOS_API_KEY"),
 		AgentVersion:             "2.0.0-dev",
 		QueueFile:                filepath.Join("agent", "data", "queue.json"),
 		CollectIntervalSeconds:   30,
@@ -64,6 +66,10 @@ func Load(path string) (Config, error) {
 	}
 	if cfg.QueueFile == "" {
 		cfg.QueueFile = filepath.Join("agent", "data", "queue.json")
+	}
+	// Fall back to env var if not set in config file
+	if cfg.APIKey == "" {
+		cfg.APIKey = os.Getenv("SECOS_API_KEY")
 	}
 	return cfg, nil
 }

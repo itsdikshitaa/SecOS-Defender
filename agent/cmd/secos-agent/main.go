@@ -23,7 +23,7 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	httpClient, err := client.New(cfg.APIBaseURL, cfg.TLS)
+	httpClient, err := client.New(cfg.APIBaseURL, cfg.APIKey, cfg.TLS)
 	if err != nil {
 		log.Fatalf("failed to create client: %v", err)
 	}
