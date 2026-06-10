@@ -1,7 +1,6 @@
 import json
 import logging
 import subprocess
-import shlex
 
 logger = logging.getLogger(__name__)
 
