@@ -1,6 +1,11 @@
+import logging
+
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
+
+logger = logging.getLogger(__name__)
+
 
 class AnomalyDetector:
     def __init__(self):
@@ -19,7 +24,7 @@ class AnomalyDetector:
         """
         scaled_data = self.scaler.fit_transform(normal_data)
         self.model.fit(scaled_data)
-        print("[INFO] Anomaly Detector trained successfully.")
+        logger.info("Anomaly Detector trained successfully.")
 
     def detect(self, current_data):
         """
@@ -35,28 +40,26 @@ class AnomalyDetector:
         prediction = self.model.predict(scaled_data)
         return prediction[0]
 
+
 if __name__ == "__main__":
-    # Example usage
-    print("[INFO] Initializing Anomaly Detector...")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logger.info("Initializing Anomaly Detector...")
     detector = AnomalyDetector()
 
     # Simulated training data (normal metrics: [CPU %, Memory %, Disk %])
     normal_metrics = np.array([
-        [10, 20, 30],  # Normal behavior
+        [10, 20, 30],
         [15, 25, 35],
         [12, 22, 32],
         [11, 21, 31],
     ])
 
-    # Train the model
     detector.train(normal_metrics)
 
-    # Simulated current data (system metrics)
-    current_metrics = np.array([50, 80, 90])  # Abnormal behavior
+    current_metrics = np.array([50, 80, 90])
 
-    # Detect anomalies
     result = detector.detect(current_metrics)
     if result == -1:
-        print("[ALERT] Anomaly detected in system metrics!")
+        logger.warning("Anomaly detected in system metrics!")
     else:
-        print("[INFO] System metrics are normal.")
+        logger.info("System metrics are normal.")
