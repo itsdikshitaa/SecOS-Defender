@@ -1,24 +1,30 @@
 import json
+import logging
 import os
 from pathlib import Path
 from urllib import request
 
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "fixtures" / "demo"
 API_BASE_URL = os.getenv("SECOS_API_BASE_URL", "http://localhost:8000/api/v1")
+API_KEY = os.getenv("SECOS_API_KEY", "")
 
 
 def post_json(path: str, payload: dict) -> None:
     body = json.dumps(payload).encode("utf-8")
+    headers = {"Content-Type": "application/json"}
+    if API_KEY:
+        headers["X-API-Key"] = API_KEY
     req = request.Request(
         f"{API_BASE_URL}{path}",
         data=body,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     with request.urlopen(req) as response:
-        print(f"[INFO] POST {path} -> {response.status}")
+        logger.info("POST %s -> %s", path, response.status)
 
 
 def load_json(filename: str):
@@ -56,8 +62,9 @@ def simulate_events() -> None:
 
 
 if __name__ == "__main__":
-    print("[INFO] Sending SecOS Defender v2 demo inventory...")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logger.info("Sending SecOS Defender v2 demo inventory...")
     simulate_inventory()
-    print("[INFO] Sending SecOS Defender v2 demo events...")
+    logger.info("Sending SecOS Defender v2 demo events...")
     simulate_events()
-    print("[INFO] Demo producer completed. Open the analyst console to inspect findings.")
+    logger.info("Demo producer completed. Open the analyst console to inspect findings.")
