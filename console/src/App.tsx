@@ -60,10 +60,36 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const socket = new WebSocket(websocketUrl());
-    socket.onmessage = () => void load();
-    socket.onerror = () => setError("Live stream disconnected. Polling continues.");
-    return () => socket.close();
+    function connect() {
+      const socket = new WebSocket(websocketUrl());
+      let disconnected = false;
+
+      socket.onopen = () => {
+        setError(null);
+        disconnected = false;
+      };
+
+      socket.onmessage = () => void load();
+
+      socket.onerror = () => {
+        disconnected = true;
+        setError("Live stream disconnected. Polling continues.");
+      };
+
+      socket.onclose = () => {
+        if (disconnected) {
+          // Auto-reconnect after 5 seconds
+          setTimeout(connect, 5000);
+        }
+      };
+
+      return socket;
+    }
+
+    const socket = connect();
+    return () => {
+      socket.close();
+    };
   }, []);
 
   const filteredAlerts = snapshot.alerts.filter((alert) => {
