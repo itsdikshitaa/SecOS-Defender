@@ -53,11 +53,102 @@ def _matches_selection(event: dict[str, Any], selection: dict[str, Any]) -> bool
     return True
 
 
+def _tokenize_condition(expression: str) -> list[str]:
+    """Tokenize a boolean expression into tokens."""
+    tokens: list[str] = []
+    i = 0
+    while i < len(expression):
+        char = expression[i]
+        if char.isspace():
+            i += 1
+            continue
+        if char in "()":
+            tokens.append(char)
+            i += 1
+            continue
+        # Match multi-character tokens
+        if expression[i:].startswith("True"):
+            tokens.append("True")
+            i += 4
+        elif expression[i:].startswith("False"):
+            tokens.append("False")
+            i += 5
+        elif expression[i:].startswith("and"):
+            tokens.append("and")
+            i += 3
+        elif expression[i:].startswith("or"):
+            tokens.append("or")
+            i += 2
+        elif expression[i:].startswith("not"):
+            tokens.append("not")
+            i += 3
+        else:
+            raise ValueError(f"Unexpected character in condition: {expression[i:]}")
+    return tokens
+
+
+def _parse_or(tokens: list[str], pos: int) -> tuple[bool, int]:
+    """Parse OR expression (lowest precedence)."""
+    left, pos = _parse_and(tokens, pos)
+    while pos < len(tokens) and tokens[pos] == "or":
+        right, pos = _parse_and(tokens, pos + 1)
+        left = left or right
+    return left, pos
+
+
+def _parse_and(tokens: list[str], pos: int) -> tuple[bool, int]:
+    """Parse AND expression (medium precedence)."""
+    left, pos = _parse_not(tokens, pos)
+    while pos < len(tokens) and tokens[pos] == "and":
+        right, pos = _parse_not(tokens, pos + 1)
+        left = left and right
+    return left, pos
+
+
+def _parse_not(tokens: list[str], pos: int) -> tuple[bool, int]:
+    """Parse NOT expression (highest precedence)."""
+    if pos < len(tokens) and tokens[pos] == "not":
+        value, pos = _parse_not(tokens, pos + 1)
+        return not value, pos
+    return _parse_atom(tokens, pos)
+
+
+def _parse_atom(tokens: list[str], pos: int) -> tuple[bool, int]:
+    """Parse an atomic value: True, False, or a parenthesized expression."""
+    if pos >= len(tokens):
+        raise ValueError("Unexpected end of condition")
+    token = tokens[pos]
+    if token == "True":
+        return True, pos + 1
+    if token == "False":
+        return False, pos + 1
+    if token == "(":
+        value, pos = _parse_or(tokens, pos + 1)
+        if pos >= len(tokens) or tokens[pos] != ")":
+            raise ValueError("Missing closing parenthesis")
+        return value, pos + 1
+    raise ValueError(f"Unexpected token: {token}")
+
+
 def _eval_condition(condition: str, states: dict[str, bool]) -> bool:
+    """
+    Safely evaluate a boolean condition string against provided states.
+    Uses a recursive descent parser instead of eval() to avoid RCE vulnerabilities.
+    """
+    # Replace state names with boolean string representations
     expression = condition
     for name in sorted(states, key=len, reverse=True):
         expression = re.sub(rf"\b{re.escape(name)}\b", str(states[name]), expression)
-    return bool(eval(expression, {"__builtins__": {}}, {}))
+
+    # Tokenize and parse the expression safely
+    try:
+        tokens = _tokenize_condition(expression)
+        result, pos = _parse_or(tokens, 0)
+        if pos != len(tokens):
+            raise ValueError(f"Unexpected tokens after expression: {tokens[pos:]}")
+        return result
+    except ValueError as e:
+        raise ValueError(f"Invalid condition '{condition}': {e}")
 
 
 @dataclass
