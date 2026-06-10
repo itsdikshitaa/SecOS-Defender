@@ -266,9 +266,6 @@ def response_actions(db: Session = Depends(get_db)):
     ]
 
 
-_ws_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-
 def _verify_ws_api_key(websocket: WebSocket) -> str | None:
     """Validate API key from WebSocket query parameters."""
     token = websocket.query_params.get("token")

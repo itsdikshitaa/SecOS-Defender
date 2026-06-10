@@ -91,11 +91,11 @@ export default function App() {
     connect();
 
     return () => {
-      currentSocket = null;
       window.clearTimeout(reconnectTimeoutRef.current);
       if (currentSocket) {
         currentSocket.close();
       }
+      currentSocket = null;
     };
   }, []);
 
