@@ -34,6 +34,10 @@ class Settings(BaseSettings):
         default="secos-dev-key-change-in-production",
         description="API key required for all non-health endpoints. Set SECOS_API_KEY in production.",
     )
+    rate_limit: str = Field(
+        default="60/minute",
+        description="Global rate limit for API endpoints. Format: {count}/[{second|minute|hour}]",
+    )
 
 
 @lru_cache(maxsize=1)
