@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -169,10 +173,17 @@ class RuleEngine:
     def load_files(self) -> list[dict[str, Any]]:
         self.rules = []
         for path in sorted(self.rules_path.glob("*.yml")):
-            with path.open("r", encoding="utf-8") as handle:
-                parsed = yaml.safe_load(handle)
-            if parsed:
-                self.rules.append(parsed)
+            try:
+                with path.open("r", encoding="utf-8") as handle:
+                    parsed = yaml.safe_load(handle)
+                if parsed is None:
+                    logger.warning("Skipping empty rule file: %s", path)
+                elif not isinstance(parsed, dict):
+                    logger.warning("Skipping malformed rule file (not a mapping): %s", path)
+                else:
+                    self.rules.append(parsed)
+            except (yaml.YAMLError, OSError, UnicodeDecodeError) as e:
+                logger.error("Failed to load rule file %s: %s", path, e)
         return self.rules
 
     def sync_rulepacks(self, db: Session) -> None:
