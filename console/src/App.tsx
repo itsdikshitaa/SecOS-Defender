@@ -60,8 +60,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const reconnectTimeoutRef = { current: -1 };
+    let currentSocket: WebSocket | null = null;
+
     function connect() {
       const socket = new WebSocket(websocketUrl());
+      currentSocket = socket;
       let disconnected = false;
 
       socket.onopen = () => {
@@ -77,18 +81,21 @@ export default function App() {
       };
 
       socket.onclose = () => {
-        if (disconnected) {
+        if (disconnected && currentSocket === socket) {
           // Auto-reconnect after 5 seconds
-          setTimeout(connect, 5000);
+          reconnectTimeoutRef.current = window.setTimeout(connect, 5000);
         }
       };
-
-      return socket;
     }
 
-    const socket = connect();
+    connect();
+
     return () => {
-      socket.close();
+      currentSocket = null;
+      window.clearTimeout(reconnectTimeoutRef.current);
+      if (currentSocket) {
+        currentSocket.close();
+      }
     };
   }, []);
 

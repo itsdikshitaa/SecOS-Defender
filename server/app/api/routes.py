@@ -266,8 +266,23 @@ def response_actions(db: Session = Depends(get_db)):
     ]
 
 
+_ws_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def _verify_ws_api_key(websocket: WebSocket) -> str | None:
+    """Validate API key from WebSocket query parameters."""
+    token = websocket.query_params.get("token")
+    settings = get_settings()
+    if not token or token != settings.api_key:
+        return None
+    return token
+
+
 @router.websocket("/ws/stream")
 async def event_stream(websocket: WebSocket):
+    if not _verify_ws_api_key(websocket):
+        await websocket.close(code=4001, reason="Invalid or missing API key. Provide via ?token= query parameter.")
+        return
     await hub.connect(websocket)
     try:
         while True:
