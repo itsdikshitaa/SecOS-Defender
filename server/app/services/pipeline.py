@@ -110,7 +110,6 @@ async def ingest_events(db: Session, payload: EventBatch, rule_engine: RuleEngin
                 )
             )
             alerts_created += 1
-        db.commit()
 
         if matches:
             await hub.broadcast(
@@ -118,6 +117,7 @@ async def ingest_events(db: Session, payload: EventBatch, rule_engine: RuleEngin
                 {"host_id": event.host_id, "alerts": get_recent_alerts(db, limit=5), "event_id": event.event_id},
             )
 
+    db.commit()
     return {"stored_events": stored, "alerts_created": alerts_created}
 
 
