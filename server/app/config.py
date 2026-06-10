@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     vulnerability_feed_path: Path = SERVICE_DIR / "app" / "data" / "vulnerability_feed.json"
     websocket_backlog: int = 50
     response_requires_approval: bool = True
+    api_key: str = Field(
+        default="secos-dev-key-change-in-production",
+        description="API key required for all non-health endpoints. Set SECOS_API_KEY in production.",
+    )
 
 
 @lru_cache(maxsize=1)

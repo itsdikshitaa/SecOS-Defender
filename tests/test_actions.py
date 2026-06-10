@@ -5,7 +5,7 @@ from app.models import ResponseAction
 from app.worker import expire_actions
 
 
-def test_action_lifecycle(client):
+def test_action_lifecycle(auth_client):
     heartbeat = {
         "host_id": "lin-ubuntu-01",
         "hostname": "lin-ubuntu-01",
@@ -14,9 +14,9 @@ def test_action_lifecycle(client):
         "queue_depth": 0,
         "status": "online",
     }
-    client.post("/api/v1/agents/heartbeat", json=heartbeat)
+    auth_client.post("/api/v1/agents/heartbeat", json=heartbeat)
 
-    created = client.post(
+    created = auth_client.post(
         "/api/v1/actions",
         json={
             "host_id": "lin-ubuntu-01",
@@ -29,12 +29,12 @@ def test_action_lifecycle(client):
     ).json()
 
     action_id = created["action_id"]
-    client.post(f"/api/v1/actions/{action_id}/approve", json={"approved_by": "pytest"})
+    auth_client.post(f"/api/v1/actions/{action_id}/approve", json={"approved_by": "pytest"})
 
-    polled = client.get("/api/v1/actions/poll", params={"host_id": "lin-ubuntu-01"}).json()
+    polled = auth_client.get("/api/v1/actions/poll", params={"host_id": "lin-ubuntu-01"}).json()
     assert polled[0]["action_id"] == action_id
 
-    result = client.post(
+    result = auth_client.post(
         f"/api/v1/actions/{action_id}/result",
         json={"state": "completed", "result": {"message": "done"}},
     )
@@ -42,8 +42,8 @@ def test_action_lifecycle(client):
     assert result.json()["state"] == "completed"
 
 
-def test_worker_expires_pending_actions_with_sqlite_naive_timestamps(client):
-    created = client.post(
+def test_worker_expires_pending_actions_with_sqlite_naive_timestamps(auth_client):
+    created = auth_client.post(
         "/api/v1/actions",
         json={
             "host_id": "lin-ubuntu-01",
@@ -62,6 +62,6 @@ def test_worker_expires_pending_actions_with_sqlite_naive_timestamps(client):
 
     assert expire_actions() >= 1
 
-    actions = client.get("/api/v1/actions").json()
+    actions = auth_client.get("/api/v1/actions").json()
     action = next(item for item in actions if item["id"] == created["action_id"])
     assert action["state"] == "expired"
