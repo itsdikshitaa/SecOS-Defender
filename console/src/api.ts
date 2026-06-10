@@ -50,6 +50,9 @@ export function approveAction(actionId: string, approvedBy: string) {
 export function websocketUrl() {
   const base = import.meta.env.VITE_WS_BASE_URL || `${window.location.origin}`;
   const wsBase = base.replace("http://", "ws://").replace("https://", "wss://");
-  const token = import.meta.env.VITE_API_KEY || "secos-dev-key-change-in-production";
+  const token = import.meta.env.VITE_API_KEY;
+  if (!token) {
+    throw new Error("VITE_API_KEY environment variable is required. Set it to the SECOS_API_KEY value used by the server.");
+  }
   return `${wsBase}/api/v1/ws/stream?token=${encodeURIComponent(token)}`;
 }
