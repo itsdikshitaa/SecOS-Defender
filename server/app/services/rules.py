@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-
-
-logger = logging.getLogger(__name__)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import RulePack
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_nested(data: dict[str, Any], dotted: str) -> Any:
@@ -210,7 +210,7 @@ class RuleEngine:
                 )
         db.commit()
         self.rules = [
-            pack.content for pack in db.scalars(select(RulePack).where(RulePack.enabled == True)).all()
+            pack.content for pack in db.scalars(select(RulePack).where(RulePack.enabled)).all()
         ]
 
     def evaluate(self, event: dict[str, Any]) -> list[RuleMatch]:
