@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Alert, Event, Finding, Host
-from app.schemas import EventBatch, NormalizedEvent
+from app.schemas import EventBatch, NormalizedEvent, OverviewMetric
 from app.services.broadcaster import hub
 from app.services.rules import RuleEngine, RuleMatch
 
@@ -40,7 +40,7 @@ def _event_to_record(event: NormalizedEvent, batch_id: str | None) -> Event:
         process=event.process.model_dump(exclude_none=True),
         network=event.network.model_dump(exclude_none=True),
         file=event.file.model_dump(exclude_none=True),
-        registry=event.registry.model_dump(exclude_none=True),
+        registry_data=event.registry.model_dump(exclude_none=True),
         tags=event.tags,
         raw_payload=event.raw_payload,
     )
@@ -154,7 +154,7 @@ def get_recent_findings(db: Session, limit: int = 20) -> list[dict[str, Any]]:
     ]
 
 
-def get_overview_metrics(db: Session) -> list[dict[str, Any]]:
+def get_overview_metrics(db: Session) -> list[OverviewMetric]:
     open_alerts = db.scalar(select(func.count()).select_from(Alert).where(Alert.status == "open")) or 0
     open_findings = db.scalar(select(func.count()).select_from(Finding).where(Finding.status == "open")) or 0
     hosts = db.scalar(select(func.count()).select_from(Host)) or 0
@@ -162,8 +162,8 @@ def get_overview_metrics(db: Session) -> list[dict[str, Any]]:
         db.scalar(select(func.count()).select_from(Alert).where(Alert.severity.in_(["high", "critical"]))) or 0
     )
     return [
-        {"label": "Live Alerts", "value": open_alerts, "trend": "Rules firing now"},
-        {"label": "Open Findings", "value": open_findings, "trend": "Correlated analyst queue"},
-        {"label": "Protected Hosts", "value": hosts, "trend": "Reporting within the last cycle"},
-        {"label": "High/Critical", "value": high_severity, "trend": "Needs immediate triage"},
+        OverviewMetric(label="Live Alerts", value=open_alerts, trend="Rules firing now"),
+        OverviewMetric(label="Open Findings", value=open_findings, trend="Correlated analyst queue"),
+        OverviewMetric(label="Protected Hosts", value=hosts, trend="Reporting within the last cycle"),
+        OverviewMetric(label="High/Critical", value=high_severity, trend="Needs immediate triage"),
     ]

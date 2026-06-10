@@ -39,5 +39,5 @@ app.add_middleware(
 )
 app.add_middleware(SlowAPIMiddleware)
 app.state.limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 app.include_router(router, prefix=settings.api_v1_prefix)

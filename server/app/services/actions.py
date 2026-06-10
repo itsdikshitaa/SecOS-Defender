@@ -57,12 +57,12 @@ def approve_action(db: Session, action_id: str, approved_by: str) -> ResponseAct
 
 
 def poll_actions(db: Session, host_id: str) -> list[ResponseAction]:
-    return db.scalars(
+    return list(db.scalars(
         select(ResponseAction).where(
             ResponseAction.host_id == host_id,
             ResponseAction.state == "approved",
         )
-    ).all()
+    ).all())
 
 
 def mark_action_result(db: Session, action_id: str, payload: ActionResult) -> ResponseAction | None:

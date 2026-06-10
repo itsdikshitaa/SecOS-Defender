@@ -59,7 +59,7 @@ class Event(TimestampMixin, Base):
     process: Mapped[dict] = mapped_column(JSON, default=dict)
     network: Mapped[dict] = mapped_column(JSON, default=dict)
     file: Mapped[dict] = mapped_column(JSON, default=dict)
-    registry: Mapped[dict] = mapped_column(JSON, default=dict)
+    registry_data: Mapped[dict] = mapped_column(JSON, default=dict)
     tags: Mapped[list] = mapped_column(JSON, default=list)
     raw_payload: Mapped[dict] = mapped_column(JSON, default=dict)
 
