@@ -194,6 +194,7 @@ export default function App() {
               caption="Real-time rule output from normalized endpoint telemetry"
               action={`${filteredAlerts.length} visible`}
             >
+              <ThreatTimeline alerts={filteredAlerts} />
               <AlertTable alerts={filteredAlerts} />
             </Panel>
 
@@ -274,6 +275,12 @@ function AlertTable({ alerts }: { alerts: Alert[] }) {
   }
 
   return (
+          <div className="severity-bar">
+            <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "critical").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-critical)"}} />
+            <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "high").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-high)"}} />
+            <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "medium").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-medium)"}} />
+            <div className="severity-bar-segment" style={{width: alerts.filter(a => { const s = a.severity.toLowerCase(); return s === "low" || s === "info"; }).length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-low)"}} />
+          </div>
     <div className="table-shell">
       <table className="ledger-table">
         <thead>
