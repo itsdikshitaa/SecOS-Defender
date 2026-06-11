@@ -20,24 +20,35 @@ class BroadcastHub:
         async with self._lock:
             self._connections.add(websocket)
             for item in self._history:
-                await websocket.send_json(item)
+                try:
+                    await websocket.send_json(item)
+                except Exception:
+                    break
 
     async def disconnect(self, websocket: WebSocket) -> None:
         async with self._lock:
             self._connections.discard(websocket)
 
     async def broadcast(self, event_type: str, payload: Any) -> None:
+        import asyncio
         message = {"event": event_type, "payload": payload}
+        stale: list[WebSocket] = []
         async with self._lock:
             self._history.append(message)
-            stale: list[WebSocket] = []
-            for websocket in self._connections:
-                try:
-                    await websocket.send_json(message)
-                except Exception:
-                    stale.append(websocket)
-            for websocket in stale:
-                self._connections.discard(websocket)
+            connections = list(self._connections)
+
+        async def _send(ws: WebSocket) -> None:
+            try:
+                await ws.send_json(message)
+            except Exception:
+                stale.append(ws)
+
+        if connections:
+            await asyncio.gather(*[_send(ws) for ws in connections], return_exceptions=True)
+
+        async with self._lock:
+            for ws in stale:
+                self._connections.discard(ws)
 
 
 hub = BroadcastHub()
