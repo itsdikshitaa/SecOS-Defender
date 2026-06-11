@@ -275,38 +275,40 @@ function AlertTable({ alerts }: { alerts: Alert[] }) {
   }
 
   return (
-          <div className="severity-bar">
-            <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "critical").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-critical)"}} />
-            <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "high").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-high)"}} />
-            <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "medium").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-medium)"}} />
-            <div className="severity-bar-segment" style={{width: alerts.filter(a => { const s = a.severity.toLowerCase(); return s === "low" || s === "info"; }).length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-low)"}} />
-          </div>
-    <div className="table-shell">
-      <table className="ledger-table">
-        <thead>
-          <tr>
-            <th>Signal</th>
-            <th>Host</th>
-            <th>Rule</th>
-            <th>Seen</th>
-          </tr>
-        </thead>
-        <tbody>
-          {alerts.map((alert) => (
-            <tr key={alert.id}>
-              <td>
-                <span className={severityClass(alert.severity)}>{alert.severity}</span>
-                <strong>{alert.title}</strong>
-                <p>{alert.summary}</p>
-              </td>
-              <td>{alert.host_id}</td>
-              <td>{alert.rule_id}</td>
-              <td>{formatTime(alert.created_at)}</td>
+    <>
+      <div className="severity-bar">
+        <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "critical").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-critical)"}} />
+        <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "high").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-high)"}} />
+        <div className="severity-bar-segment" style={{width: alerts.filter(a => a.severity.toLowerCase() === "medium").length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-medium)"}} />
+        <div className="severity-bar-segment" style={{width: alerts.filter(a => { const s = a.severity.toLowerCase(); return s === "low" || s === "info"; }).length / Math.max(alerts.length, 1) * 100 + "%", background: "var(--signal-low)"}} />
+      </div>
+      <div className="table-shell">
+        <table className="ledger-table">
+          <thead>
+            <tr>
+              <th>Signal</th>
+              <th>Host</th>
+              <th>Rule</th>
+              <th>Seen</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {alerts.map((alert) => (
+              <tr key={alert.id}>
+                <td>
+                  <span className={severityClass(alert.severity)}>{alert.severity}</span>
+                  <strong>{alert.title}</strong>
+                  <p>{alert.summary}</p>
+                </td>
+                <td>{alert.host_id}</td>
+                <td>{alert.rule_id}</td>
+                <td>{formatTime(alert.created_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
