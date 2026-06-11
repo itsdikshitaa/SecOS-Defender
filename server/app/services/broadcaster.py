@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import WebSocket
 
 from app.config import get_settings
+import asyncio
 
 
 class BroadcastHub:
@@ -30,7 +31,7 @@ class BroadcastHub:
             self._connections.discard(websocket)
 
     async def broadcast(self, event_type: str, payload: Any) -> None:
-        import asyncio
+
         message = {"event": event_type, "payload": payload}
         stale: list[WebSocket] = []
         async with self._lock:

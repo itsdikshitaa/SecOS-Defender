@@ -462,6 +462,27 @@ function ActionList({
   );
 }
 
+function ThreatTimeline({ alerts }: { alerts: Alert[] }) {
+  const recent = [...alerts].slice(0, 6);
+  if (!recent.length) {
+    return <div className="empty-state"><strong>No recent threats</strong><p>Real-time alerts appear here as they are ingested.</p></div>;
+  }
+  return (
+    <div className="threat-timeline">
+      {recent.map((alert) => (
+        <div key={alert.id} className="threat-event" style={{borderLeftColor: alert.severity.toLowerCase() === 'critical' ? 'var(--signal-critical)' : alert.severity.toLowerCase() === 'high' ? 'var(--signal-high)' : alert.severity.toLowerCase() === 'medium' ? 'var(--signal-medium)' : 'var(--signal-low)'}}>
+          <span className="threat-time">{new Date(alert.created_at).toLocaleTimeString()}</span>
+          <div className="threat-detail">
+            <span className={severityClass(alert.severity)}>{alert.severity}</span>
+            <strong>{alert.title}</strong>
+            <p>{alert.summary}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="empty-state">
