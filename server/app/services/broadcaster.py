@@ -7,7 +7,6 @@ from typing import Any
 from fastapi import WebSocket
 
 from app.config import get_settings
-import asyncio
 
 
 class BroadcastHub:
